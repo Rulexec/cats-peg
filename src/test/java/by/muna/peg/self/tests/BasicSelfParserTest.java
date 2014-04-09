@@ -90,11 +90,11 @@ public class BasicSelfParserTest {
     public void codeTest() throws PEGParseException {
         PEGParseResult result = SelfParser.CODE.parse(
             new PEGParsing(),
-            "{@ x @}",
+            "{@ some \\@} code \\\\\\@} escaping @}",
             0
         );
 
-        Assert.assertEquals("x", result.getResult());
+        Assert.assertEquals("some @} code \\\\@} escaping", result.getResult());
     }
 
     @Test

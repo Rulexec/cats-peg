@@ -19,20 +19,23 @@ public class LookaheadExpression implements PEGExpression {
     public PEGParseResult parse(PEGParsingControl parsing, CharSequence chars, int offset)
         throws PEGParseException
     {
-        try {
-            PEGParseResult result = this.expression.parse(parsing, chars, offset);
+        if (!this.negate) {
+            // TODO: expected/got
+            this.expression.parse(parsing, chars, offset);
+            return new PEGParseResult(null, offset);
+        } else {
+            boolean catched = false;
+
+            try {
+                this.expression.parse(parsing, chars, offset);
+            } catch (PEGParseSyntaxException ex) {
+                catched = true;
+            }
 
             // TODO: expected/got
-            // TODO: we are in try block, so our exception will be rethrowed with redundant negate-check
-            if (negate) throw new PEGParseSyntaxException(null, null, offset);
+            if (!catched) throw new PEGParseSyntaxException(null, null, offset);
 
             return new PEGParseResult(null, offset);
-        } catch (PEGParseException ex) {
-            if (!this.negate) {
-                throw ex;
-            } else {
-                return new PEGParseResult(null, offset);
-            }
         }
     }
 }

@@ -24,4 +24,30 @@ public class PEGParseSyntaxException extends PEGParseException {
     public int getOffset() {
         return offset;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Expected: ");
+        if (this.expected != null) {
+            boolean isFirst = true;
+            for (String s : this.expected) {
+                if (isFirst) isFirst = false;
+                else sb.append(", ");
+
+                sb.append(s);
+            }
+        } else {
+            sb.append("???");
+        }
+
+        sb.append(", got: ");
+        sb.append(this.got != null ? this.got : "???");
+
+        sb.append(", offset: ");
+        sb.append(Integer.toString(this.offset));
+
+        return sb.toString();
+    }
 }
