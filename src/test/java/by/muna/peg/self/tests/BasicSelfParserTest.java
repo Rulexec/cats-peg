@@ -5,9 +5,11 @@ import by.muna.peg.grammar.PEGParseResult;
 import by.muna.peg.grammar.exceptions.PEGParseException;
 import by.muna.peg.grammar.exceptions.PEGParseSyntaxException;
 import by.muna.peg.self.SelfParser;
-import by.muna.peg.self.model.Quantificator;
-import by.muna.peg.self.model.SquareInterval;
-import by.muna.peg.self.model.SquareVariants;
+import by.muna.peg.self.model.LiteralModel;
+import by.muna.peg.self.model.NameModel;
+import by.muna.peg.self.model.QuantificatorModel;
+import by.muna.peg.self.model.SquareIntervalModel;
+import by.muna.peg.self.model.SquareVariantsModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,7 +40,7 @@ public class BasicSelfParserTest {
             new PEGParsing(), "<2, 3>", 0
         );
 
-        Quantificator q = (Quantificator) result.getResult();
+        QuantificatorModel q = (QuantificatorModel) result.getResult();
 
         Assert.assertEquals(2, q.getFrom());
         Assert.assertEquals(3, q.getTo());
@@ -48,7 +50,7 @@ public class BasicSelfParserTest {
             new PEGParsing(), "<5,*>", 0
         );
 
-        q = (Quantificator) result.getResult();
+        q = (QuantificatorModel) result.getResult();
 
         Assert.assertEquals(5, q.getFrom());
         Assert.assertTrue(q.isToInfinity());
@@ -61,7 +63,7 @@ public class BasicSelfParserTest {
             new PEGParsing(), symbol, 0
         );
 
-        Quantificator q = (Quantificator) result.getResult();
+        QuantificatorModel q = (QuantificatorModel) result.getResult();
 
         Assert.assertEquals(from, q.getFrom());
 
@@ -78,7 +80,7 @@ public class BasicSelfParserTest {
             new PEGParsing(), "SomeName", 0
         );
 
-        Assert.assertEquals("SomeName", result.getResult());
+        Assert.assertEquals("SomeName", ((NameModel) result.getResult()).getName());
 
         try {
             SelfParser.NAME.parse(new PEGParsing(), "_Illegal", 0);
@@ -98,17 +100,28 @@ public class BasicSelfParserTest {
     }
 
     @Test
+    public void literalTest() throws PEGParseException {
+        PEGParseResult result = SelfParser.LITERAL.parse(
+            new PEGParsing(),
+            "'some \\'literal\\' \\\\ \\n \\t x'",
+            0
+        );
+
+        Assert.assertEquals("some 'literal' \\ \n \t x", ((LiteralModel) result.getResult()).getLiteral());
+    }
+
+    @Test
     public void squareVariantsTest() throws PEGParseException {
         PEGParseResult result = SelfParser.SQUARE_VARIANTS.parse(
             new PEGParsing(), "ab0-9\\--$\\]", 0
         );
 
-        SquareVariants variants = (SquareVariants) result.getResult();
+        SquareVariantsModel variants = (SquareVariantsModel) result.getResult();
 
         Set<Character> expectedChars = new HashSet<>(Arrays.<Character>asList('a', 'b', ']'));
-        Set<SquareInterval> expectedIntervals = new HashSet<>(Arrays.<SquareInterval>asList(
-            new SquareInterval('0', '9'),
-            new SquareInterval('-', '$')
+        Set<SquareIntervalModel> expectedIntervals = new HashSet<>(Arrays.<SquareIntervalModel>asList(
+            new SquareIntervalModel('0', '9'),
+            new SquareIntervalModel('-', '$')
         ));
 
         for (Character c: variants.getChars()) {
@@ -117,7 +130,7 @@ public class BasicSelfParserTest {
 
         Assert.assertEquals(0, expectedChars.size());
 
-        for (SquareInterval interval : variants.getIntervals()) {
+        for (SquareIntervalModel interval : variants.getIntervals()) {
             Assert.assertTrue(expectedIntervals.remove(interval));
         }
 

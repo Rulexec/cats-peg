@@ -1,9 +1,9 @@
 package by.muna.peg.self.model;
 
-public class SquareInterval {
+public class SquareIntervalModel {
     private char from, to;
 
-    public SquareInterval(char from, char to) {
+    public SquareIntervalModel(char from, char to) {
         this.from = from;
         this.to = to;
     }
@@ -24,9 +24,9 @@ public class SquareInterval {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof SquareInterval)) return false;
+        if (!(o instanceof SquareIntervalModel)) return false;
 
-        SquareInterval other = (SquareInterval) o;
+        SquareIntervalModel other = (SquareIntervalModel) o;
 
         return (this.from == other.from) && (this.to == other.to);
     }

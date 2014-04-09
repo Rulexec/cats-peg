@@ -1,10 +1,10 @@
 package by.muna.peg.self.model;
 
-public class SquareGroup {
+public class SquareGroupModel {
     private boolean negate;
-    private SquareVariants variants;
+    private SquareVariantsModel variants;
 
-    public SquareGroup(SquareVariants variants, boolean negate) {
+    public SquareGroupModel(SquareVariantsModel variants, boolean negate) {
         this.variants = variants;
         this.negate = negate;
     }
@@ -13,7 +13,7 @@ public class SquareGroup {
         return negate;
     }
 
-    public SquareVariants getVariants() {
+    public SquareVariantsModel getVariants() {
         return variants;
     }
 }

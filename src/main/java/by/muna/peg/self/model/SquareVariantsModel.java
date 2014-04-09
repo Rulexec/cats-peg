@@ -2,11 +2,11 @@ package by.muna.peg.self.model;
 
 import java.util.List;
 
-public class SquareVariants {
+public class SquareVariantsModel {
     private List<Character> chars;
-    private List<SquareInterval> intervals;
+    private List<SquareIntervalModel> intervals;
 
-    public SquareVariants(List<Character> chars, List<SquareInterval> intervals) {
+    public SquareVariantsModel(List<Character> chars, List<SquareIntervalModel> intervals) {
         this.chars = chars;
         this.intervals = intervals;
     }
@@ -15,7 +15,7 @@ public class SquareVariants {
         return chars;
     }
 
-    public List<SquareInterval> getIntervals() {
+    public List<SquareIntervalModel> getIntervals() {
         return intervals;
     }
 }

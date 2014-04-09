@@ -1,14 +1,14 @@
 package by.muna.peg.self.model;
 
-public class Quantificator {
+public class QuantificatorModel {
     private int from, to;
     private boolean toInfinity;
 
-    public Quantificator(int from) {
+    public QuantificatorModel(int from) {
         this.from = from;
         this.toInfinity = true;
     }
-    public Quantificator(int from, int to) {
+    public QuantificatorModel(int from, int to) {
         this.from = from;
         this.to = to;
         this.toInfinity = false;
