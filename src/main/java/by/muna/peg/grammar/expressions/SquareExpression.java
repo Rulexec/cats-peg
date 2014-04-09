@@ -7,6 +7,7 @@ import by.muna.peg.grammar.exceptions.PEGParseException;
 import by.muna.peg.grammar.exceptions.PEGParseSyntaxException;
 import by.muna.peg.grammar.expressions.square.CharInterval;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,6 +19,9 @@ public class SquareExpression implements PEGExpression {
     // FIXME: We can reduce complexity from O(N) to O(log N) using tree
     private List<CharInterval> intervals;
 
+    public SquareExpression(List<Character> chars, List<CharInterval> intervals) {
+        this(chars, intervals, false);
+    }
     public SquareExpression(List<Character> chars, List<CharInterval> intervals, boolean negate) {
         this.negate = negate;
 
