@@ -389,7 +389,7 @@ public class SelfParser {
     ));
 
     @SuppressWarnings("unchecked")
-    private static final PEGExpression EXPRESSION_PRODUCT = new ProductExpression(
+    public static final PEGExpression EXPRESSION_PRODUCT = new ProductExpression(
         Arrays.asList(
             SelfParser.BASIC_EXPRESSION,
             SelfParser.quantify(new ProductExpression(
@@ -419,7 +419,7 @@ public class SelfParser {
     );
 
     @SuppressWarnings("unchecked")
-    private static final PEGExpression EXPRESSION = new ProductExpression(
+    public static final PEGExpression EXPRESSION = new ProductExpression(
         Arrays.asList(
             SelfParser.EXPRESSION_PRODUCT,
             SelfParser.quantify(new ProductExpression(
@@ -447,7 +447,7 @@ public class SelfParser {
         SelfParser.EXPRESSION_HOLD.setExpression(SelfParser.EXPRESSION);
     }
 
-    private static final PEGExpression RULE = new ProductExpression(
+    public static final PEGExpression RULE = new ProductExpression(
         Arrays.asList(
             SelfParser.NAME, SelfParser.WS_MAYBE, new LiteralExpression("="),
             SelfParser.WS_MAYBE, SelfParser.EXPRESSION
@@ -459,7 +459,7 @@ public class SelfParser {
     );
 
     @SuppressWarnings("unchecked")
-    private static final PEGExpression RULES = new ProductExpression(
+    public static final PEGExpression RULES = new ProductExpression(
         Arrays.asList(
             SelfParser.RULE,
             SelfParser.quantify(new ProductExpression(
