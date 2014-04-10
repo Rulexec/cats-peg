@@ -2,9 +2,9 @@ package by.muna.peg.self.model;
 
 public class RuleModel {
     private String name;
-    private Object expression;
+    private IExpressionModel expression;
 
-    public RuleModel(String name, Object expression) {
+    public RuleModel(String name, IExpressionModel expression) {
         this.name = name;
         this.expression = expression;
     }
@@ -13,7 +13,7 @@ public class RuleModel {
         return name;
     }
 
-    public Object getExpression() {
+    public IExpressionModel getExpression() {
         return expression;
     }
 }

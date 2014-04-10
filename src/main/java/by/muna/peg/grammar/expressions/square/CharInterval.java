@@ -17,6 +17,12 @@ public class CharInterval {
     }
 
     @Override
+    public int hashCode() {
+        // TODO: This is good hashCode?
+        return Character.hashCode(this.from) ^ Character.hashCode(this.to);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (!(o instanceof CharInterval)) return false;
 

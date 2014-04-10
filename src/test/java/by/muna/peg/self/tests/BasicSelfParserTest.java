@@ -4,11 +4,11 @@ import by.muna.peg.PEGParsing;
 import by.muna.peg.grammar.PEGParseResult;
 import by.muna.peg.grammar.exceptions.PEGParseException;
 import by.muna.peg.grammar.exceptions.PEGParseSyntaxException;
+import by.muna.peg.grammar.expressions.square.CharInterval;
 import by.muna.peg.self.SelfParser;
-import by.muna.peg.self.model.LiteralModel;
+import by.muna.peg.self.model.expressions.LiteralExpressionModel;
 import by.muna.peg.self.model.NameModel;
 import by.muna.peg.self.model.QuantificatorModel;
-import by.muna.peg.self.model.SquareIntervalModel;
 import by.muna.peg.self.model.SquareVariantsModel;
 import org.junit.Assert;
 import org.junit.Test;
@@ -107,7 +107,7 @@ public class BasicSelfParserTest {
             0
         );
 
-        Assert.assertEquals("some 'literal' \\ \n \t x", ((LiteralModel) result.getResult()).getLiteral());
+        Assert.assertEquals("some 'literal' \\ \n \t x", ((LiteralExpressionModel) result.getResult()).getLiteral());
     }
 
     @Test
@@ -119,9 +119,9 @@ public class BasicSelfParserTest {
         SquareVariantsModel variants = (SquareVariantsModel) result.getResult();
 
         Set<Character> expectedChars = new HashSet<>(Arrays.<Character>asList('a', 'b', ']'));
-        Set<SquareIntervalModel> expectedIntervals = new HashSet<>(Arrays.<SquareIntervalModel>asList(
-            new SquareIntervalModel('0', '9'),
-            new SquareIntervalModel('-', '$')
+        Set<CharInterval> expectedIntervals = new HashSet<>(Arrays.<CharInterval>asList(
+            new CharInterval('0', '9'),
+            new CharInterval('-', '$')
         ));
 
         for (Character c: variants.getChars()) {
@@ -130,7 +130,7 @@ public class BasicSelfParserTest {
 
         Assert.assertEquals(0, expectedChars.size());
 
-        for (SquareIntervalModel interval : variants.getIntervals()) {
+        for (CharInterval interval : variants.getIntervals()) {
             Assert.assertTrue(expectedIntervals.remove(interval));
         }
 

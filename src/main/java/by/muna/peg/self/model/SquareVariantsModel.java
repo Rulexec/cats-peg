@@ -1,12 +1,14 @@
 package by.muna.peg.self.model;
 
+import by.muna.peg.grammar.expressions.square.CharInterval;
+
 import java.util.List;
 
 public class SquareVariantsModel {
     private List<Character> chars;
-    private List<SquareIntervalModel> intervals;
+    private List<CharInterval> intervals;
 
-    public SquareVariantsModel(List<Character> chars, List<SquareIntervalModel> intervals) {
+    public SquareVariantsModel(List<Character> chars, List<CharInterval> intervals) {
         this.chars = chars;
         this.intervals = intervals;
     }
@@ -15,7 +17,7 @@ public class SquareVariantsModel {
         return chars;
     }
 
-    public List<SquareIntervalModel> getIntervals() {
+    public List<CharInterval> getIntervals() {
         return intervals;
     }
 }

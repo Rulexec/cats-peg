@@ -10,20 +10,21 @@ import by.muna.peg.grammar.expressions.QuantifiedExpression;
 import by.muna.peg.grammar.expressions.SquareExpression;
 import by.muna.peg.grammar.expressions.SumExpression;
 import by.muna.peg.grammar.expressions.square.CharInterval;
-import by.muna.peg.self.model.AnyCharModel;
-import by.muna.peg.self.model.LiteralModel;
-import by.muna.peg.self.model.LookaheadExpressionModel;
+import by.muna.peg.self.model.IExpressionModel;
+import by.muna.peg.self.model.expressions.AnyCharExpressionModel;
+import by.muna.peg.self.model.expressions.LiteralExpressionModel;
+import by.muna.peg.self.model.expressions.LookaheadExpressionModel;
 import by.muna.peg.self.model.NameModel;
-import by.muna.peg.self.model.NamedExpressionModel;
-import by.muna.peg.self.model.PredicateExpressionModel;
-import by.muna.peg.self.model.ProductExpressionModel;
+import by.muna.peg.self.model.expressions.NameExpressionModel;
+import by.muna.peg.self.model.expressions.NamedExpressionModel;
+import by.muna.peg.self.model.expressions.PredicateExpressionModel;
+import by.muna.peg.self.model.expressions.ProductExpressionModel;
 import by.muna.peg.self.model.QuantificatorModel;
-import by.muna.peg.self.model.QuantifiedExpressionModel;
+import by.muna.peg.self.model.expressions.QuantifiedExpressionModel;
 import by.muna.peg.self.model.RuleModel;
-import by.muna.peg.self.model.SquareGroupModel;
-import by.muna.peg.self.model.SquareIntervalModel;
+import by.muna.peg.self.model.expressions.SquareExpressionModel;
 import by.muna.peg.self.model.SquareVariantsModel;
-import by.muna.peg.self.model.SumExpressionModel;
+import by.muna.peg.self.model.expressions.SumExpressionModel;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -163,7 +164,7 @@ public class SelfParser {
             new LiteralExpression("-"),
             SelfParser.SQUARE_CHAR
         ),
-        parsing -> new SquareIntervalModel((Character) parsing.get(0), (Character) parsing.get(2))
+        parsing -> new CharInterval((Character) parsing.get(0), (Character) parsing.get(2))
     );
 
     public static final PEGExpression SQUARE_VARIANT = new SumExpression(Arrays.asList(
@@ -175,13 +176,13 @@ public class SelfParser {
         Arrays.asList(SelfParser.quantify(SelfParser.SQUARE_VARIANT, 1)),
         parsing -> {
             List<Character> chars = new LinkedList<>();
-            List<SquareIntervalModel> intervals = new LinkedList<>();
+            List<CharInterval> intervals = new LinkedList<>();
 
             List<Object> variants = (List<Object>) parsing.get(0);
 
             for (Object variant : variants) {
-                if (variant instanceof SquareIntervalModel) {
-                    intervals.add((SquareIntervalModel) variant);
+                if (variant instanceof CharInterval) {
+                    intervals.add((CharInterval) variant);
                 } else {
                     chars.add((Character) variant);
                 }
@@ -199,7 +200,7 @@ public class SelfParser {
             SelfParser.SQUARE_VARIANTS,
             new LiteralExpression("]")
         ),
-        parsing -> new SquareGroupModel(
+        parsing -> new SquareExpressionModel(
             (SquareVariantsModel) parsing.get(2),
             !((List<Object>) parsing.get(1)).isEmpty()
         )
@@ -270,7 +271,7 @@ public class SelfParser {
     public static final PEGExpression LITERAL = new ProductExpression(
         Arrays.asList(
             new LiteralExpression("'"),
-            SelfParser.quantify(SelfParser.LITERAL_CHAR, 1),
+            SelfParser.quantify(SelfParser.LITERAL_CHAR, 0),
             new LiteralExpression("'")
         ),
         parsing -> {
@@ -282,7 +283,7 @@ public class SelfParser {
                 sb.append(c);
             }
 
-            return new LiteralModel(sb.toString());
+            return new LiteralExpressionModel(sb.toString());
         }
     );
 
@@ -291,13 +292,16 @@ public class SelfParser {
     public static final PEGExpression MATCHING = new SumExpression(Arrays.asList(
         new ProductExpression(
             Arrays.asList(new LiteralExpression(".")),
-            parsing -> new AnyCharModel()
+            parsing -> new AnyCharExpressionModel()
         ),
         SelfParser.LITERAL,
         SelfParser.SQUARE_GROUP,
         new ProductExpression(
             Arrays.asList(
-                SelfParser.NAME,
+                new ProductExpression(
+                    Arrays.asList(SelfParser.NAME),
+                    parsing -> new NameExpressionModel(((NameModel) parsing.get(0)).getName())
+                ),
                 new LookaheadExpression(
                     new ProductExpression(Arrays.asList(
                         SelfParser.WS_MAYBE,
@@ -333,10 +337,10 @@ public class SelfParser {
             ),
             parsing -> {
                 List<NameModel> maybeName = (List<NameModel>) parsing.get(0);
-                Object matching = parsing.get(1);
+                IExpressionModel matching = (IExpressionModel) parsing.get(1);
                 List<QuantificatorModel> maybeQuantificator = (List<QuantificatorModel>) parsing.get(2);
 
-                Object expression = matching;
+                IExpressionModel expression = matching;
                 if (!maybeQuantificator.isEmpty()) {
                     expression = new QuantifiedExpressionModel(
                         expression, maybeQuantificator.get(0)
@@ -358,10 +362,10 @@ public class SelfParser {
             ),
             parsing -> {
                 char t = (Character) parsing.get(0);
-                Object matching = parsing.get(2);
+                IExpressionModel matching = (IExpressionModel) parsing.get(2);
                 List<QuantificatorModel> maybeQuantificator = (List<QuantificatorModel>) parsing.get(3);
 
-                Object expression = matching;
+                IExpressionModel expression = matching;
                 if (!maybeQuantificator.isEmpty()) {
                     expression = new QuantifiedExpressionModel(
                         expression, maybeQuantificator.get(0)
@@ -400,8 +404,8 @@ public class SelfParser {
             SelfParser.quantify(SelfParser.CODE, 0, 1)
         ),
         parsing -> {
-            Object e = parsing.get(0);
-            List<Object> exprs = (List<Object>) parsing.get(1);
+            IExpressionModel e = (IExpressionModel) parsing.get(0);
+            List<IExpressionModel> exprs = (List<IExpressionModel>) parsing.get(1);
             List<String> codes = (List<String>) parsing.get(3);
 
             if (!exprs.isEmpty()) {
@@ -431,8 +435,8 @@ public class SelfParser {
             ), 0)
         ),
         parsing -> {
-            Object e = parsing.get(0);
-            List<Object> expressions = (List<Object>) parsing.get(1);
+            IExpressionModel e = (IExpressionModel) parsing.get(0);
+            List<IExpressionModel> expressions = (List<IExpressionModel>) parsing.get(1);
 
             if (!expressions.isEmpty()) {
                 expressions.add(0, e);
@@ -454,31 +458,20 @@ public class SelfParser {
         ),
         parsing -> new RuleModel(
             ((NameModel) parsing.get(0)).getName(),
-            parsing.get(4)
+            (IExpressionModel) parsing.get(4)
         )
     );
 
     @SuppressWarnings("unchecked")
     public static final PEGExpression RULES = new ProductExpression(
         Arrays.asList(
-            SelfParser.RULE,
             SelfParser.quantify(new ProductExpression(
                 Arrays.asList(SelfParser.WS_MAYBE, SelfParser.RULE),
                 parsing -> parsing.get(1)
             ), 0),
             SelfParser.WS_MAYBE
         ),
-        parsing -> {
-            RuleModel r = (RuleModel) parsing.get(0);
-            List<RuleModel> rules = (List<RuleModel>) parsing.get(1);
-
-            if (!rules.isEmpty()) {
-                rules.add(0, r);
-                return rules;
-            } else {
-                return Arrays.asList(r);
-            }
-        }
+        parsing -> parsing.get(0)
     );
 
     private static <T> List<T> emptyList() {
