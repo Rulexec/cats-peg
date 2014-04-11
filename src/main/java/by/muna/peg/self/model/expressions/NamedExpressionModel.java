@@ -1,19 +1,27 @@
 package by.muna.peg.self.model.expressions;
 
+import by.muna.peg.self.model.DirectivedNameModel;
 import by.muna.peg.self.model.ExpressionTypeModel;
+import by.muna.peg.self.model.IDirectiveModel;
 import by.muna.peg.self.model.IExpressionModel;
 
+import java.util.List;
+import java.util.Map;
+
 public class NamedExpressionModel implements IExpressionModel {
-    private String name;
+    private DirectivedNameModel directivedName;
     private IExpressionModel expression;
 
-    public NamedExpressionModel(IExpressionModel expression, String name) {
-        this.name = name;
+    public NamedExpressionModel(IExpressionModel expression, DirectivedNameModel directivedName) {
+        this.directivedName = directivedName;
         this.expression = expression;
     }
 
     public String getName() {
-        return name;
+        return directivedName.getName();
+    }
+    public Map<String, List<IDirectiveModel>> getNameDirectives() {
+        return this.directivedName.getDirectives();
     }
 
     public IExpressionModel getExpression() {

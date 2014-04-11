@@ -10,7 +10,12 @@ import by.muna.peg.grammar.expressions.QuantifiedExpression;
 import by.muna.peg.grammar.expressions.SquareExpression;
 import by.muna.peg.grammar.expressions.SumExpression;
 import by.muna.peg.grammar.expressions.square.CharInterval;
+import by.muna.peg.self.model.DirectiveModel;
+import by.muna.peg.self.model.DirectivedNameModel;
+import by.muna.peg.self.model.IDirectiveModel;
 import by.muna.peg.self.model.IExpressionModel;
+import by.muna.peg.self.model.SyntaxModel;
+import by.muna.peg.self.model.directives.LiteralDirectiveModel;
 import by.muna.peg.self.model.expressions.AnyCharExpressionModel;
 import by.muna.peg.self.model.expressions.LiteralExpressionModel;
 import by.muna.peg.self.model.expressions.LookaheadExpressionModel;
@@ -27,9 +32,13 @@ import by.muna.peg.self.model.SquareVariantsModel;
 import by.muna.peg.self.model.expressions.SumExpressionModel;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.BiFunction;
 
 public class SelfParser {
     public static final PEGExpression WS = new QuantifiedExpression(
@@ -324,12 +333,77 @@ public class SelfParser {
         )
     ));
 
+    public static final PEGExpression DIRECTIVE = new ProductExpression(
+        Arrays.asList(
+            new LiteralExpression("#"),
+            SelfParser.NAME,
+            new LiteralExpression(" "),
+            SelfParser.LITERAL
+        ),
+        parsing -> new DirectiveModel(
+            ((NameModel) parsing.get(1)).getName(),
+            new LiteralDirectiveModel((String) ((LiteralExpressionModel) parsing.get(3)).getLiteral())
+        )
+    );
+
+    @SuppressWarnings("unchecked")
+    public static final PEGExpression DIRECTIVES = new ProductExpression(
+        Arrays.asList(
+            SelfParser.DIRECTIVE,
+            SelfParser.quantify(
+                new ProductExpression(
+                    Arrays.asList(SelfParser.WS, SelfParser.DIRECTIVE),
+                    parsing -> parsing.get(1)
+                ),
+                0
+            )
+        ),
+        parsing -> {
+            DirectiveModel d = (DirectiveModel) parsing.get(0);
+            List<DirectiveModel> directivesList = (List<DirectiveModel>) parsing.get(1);
+
+            directivesList.add(0, d);
+
+            Map<String, List<IDirectiveModel>> directives = new HashMap<>();
+
+            for (DirectiveModel directive : (List<DirectiveModel>) directivesList) {
+                List<IDirectiveModel> list = directives.computeIfAbsent(
+                    directive.getName(), s -> new LinkedList<>()
+                );
+
+                list.add(directive.getDirective());
+            }
+
+            return directives;
+        }
+    );
+
+    @SuppressWarnings("unchecked")
+    public static final PEGExpression NAMING = new SumExpression(Arrays.asList(
+        new ProductExpression(
+            Arrays.asList(
+                new LiteralExpression("("),
+                SelfParser.WS_MAYBE,
+                SelfParser.NAME,
+                SelfParser.WS,
+                SelfParser.DIRECTIVES,
+                SelfParser.WS_MAYBE,
+                new LiteralExpression(")")
+            ),
+            parsing ->new DirectivedNameModel(
+                ((NameModel) parsing.get(2)).getName(),
+                (Map<String, List<IDirectiveModel>>) parsing.get(4)
+            )
+        ),
+        SelfParser.NAME
+    ));
+
     @SuppressWarnings("unchecked")
     public static final PEGExpression BASIC_EXPRESSION = new SumExpression(Arrays.asList(
         new ProductExpression(
             Arrays.asList(
                 SelfParser.quantify(new ProductExpression(
-                    Arrays.asList((SelfParser.NAME), new LiteralExpression(":")),
+                    Arrays.asList((SelfParser.NAMING), new LiteralExpression(":")),
                     parsing -> parsing.get(0)
                 ), 0, 1),
                 SelfParser.MATCHING,
@@ -347,7 +421,18 @@ public class SelfParser {
                     );
                 }
                 if (!maybeName.isEmpty()) {
-                    expression = new NamedExpressionModel(expression, maybeName.get(0).getName());
+                    NameModel nameModel = maybeName.get(0);
+
+                    DirectivedNameModel directived;
+
+                    if (nameModel instanceof DirectivedNameModel) {
+                        directived = (DirectivedNameModel) nameModel;
+                    } else {
+                        // FIXME: here should be a empty map
+                        directived = new DirectivedNameModel(nameModel.getName(), new TreeMap<>());
+                    }
+
+                    expression = new NamedExpressionModel(expression, directived);
                 }
 
                 return expression;
@@ -468,10 +553,33 @@ public class SelfParser {
             SelfParser.quantify(new ProductExpression(
                 Arrays.asList(SelfParser.WS_MAYBE, SelfParser.RULE),
                 parsing -> parsing.get(1)
-            ), 0),
-            SelfParser.WS_MAYBE
+            ), 0)
         ),
         parsing -> parsing.get(0)
+    );
+
+    @SuppressWarnings("unchecked")
+    public static final PEGExpression SYNTAX = new ProductExpression(
+        Arrays.asList(
+            SelfParser.WS_MAYBE,
+            SelfParser.quantify(new ProductExpression(
+                Arrays.asList(SelfParser.DIRECTIVES, SelfParser.WS),
+                parsing -> parsing.get(0)
+            ), 0),
+            SelfParser.RULES,
+            SelfParser.WS_MAYBE
+        ),
+        parsing -> {
+            List<Object> maybeDirectives = (List<Object>) parsing.get(1);
+            List<RuleModel> rules = (List<RuleModel>) parsing.get(2);
+
+            if (!maybeDirectives.isEmpty()) {
+                return new SyntaxModel(rules, (Map<String, List<IDirectiveModel>>) maybeDirectives.get(0));
+            } else {
+                // FIXME: must be empty map
+                return new SyntaxModel(rules, new TreeMap<>());
+            }
+        }
     );
 
     private static <T> List<T> emptyList() {

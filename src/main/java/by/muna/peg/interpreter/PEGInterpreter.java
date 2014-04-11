@@ -1,41 +1,84 @@
 package by.muna.peg.interpreter;
 
+import by.muna.java.compiler.MemoryJavaCompiler;
+import by.muna.java.compiler.StringJavaFileObject;
+import by.muna.peg.IPEGParsing;
 import by.muna.peg.grammar.PEGExpression;
 import by.muna.peg.grammar.expressions.AnyCharExpression;
 import by.muna.peg.grammar.expressions.ExpressionHolder;
 import by.muna.peg.grammar.expressions.LiteralExpression;
 import by.muna.peg.grammar.expressions.LookaheadExpression;
 import by.muna.peg.grammar.expressions.NamedExpression;
+import by.muna.peg.grammar.expressions.PredicateExpression;
 import by.muna.peg.grammar.expressions.ProductExpression;
 import by.muna.peg.grammar.expressions.QuantifiedExpression;
 import by.muna.peg.grammar.expressions.SquareExpression;
 import by.muna.peg.grammar.expressions.SumExpression;
+import by.muna.peg.self.model.DirectiveTypeModel;
+import by.muna.peg.self.model.ExpressionTypeModel;
+import by.muna.peg.self.model.IDirectiveModel;
 import by.muna.peg.self.model.IExpressionModel;
 import by.muna.peg.self.model.QuantificatorModel;
 import by.muna.peg.self.model.RuleModel;
 import by.muna.peg.self.model.SquareVariantsModel;
+import by.muna.peg.self.model.SyntaxModel;
+import by.muna.peg.self.model.directives.LiteralDirectiveModel;
 import by.muna.peg.self.model.expressions.LiteralExpressionModel;
 import by.muna.peg.self.model.expressions.LookaheadExpressionModel;
 import by.muna.peg.self.model.expressions.NameExpressionModel;
 import by.muna.peg.self.model.expressions.NamedExpressionModel;
+import by.muna.peg.self.model.expressions.PredicateExpressionModel;
 import by.muna.peg.self.model.expressions.ProductExpressionModel;
 import by.muna.peg.self.model.expressions.QuantifiedExpressionModel;
 import by.muna.peg.self.model.expressions.SquareExpressionModel;
 import by.muna.peg.self.model.expressions.SumExpressionModel;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 public class PEGInterpreter {
+    private static class TypeAndIndex {
+        public String typeName;
+        public int index;
+
+        public TypeAndIndex(String typeName, int index) {
+            this.typeName = typeName;
+            this.index = index;
+        }
+    }
+
     private Map<String, IExpressionModel> rules = new HashMap<>();
     private Map<String, PEGExpression> result = new HashMap<>();
     private Map<String, ExpressionHolder> holders = new HashMap<>();
 
-    public PEGInterpreter(List<RuleModel> rules) {
-        for (RuleModel rule : rules) {
+    private MemoryJavaCompiler compiler = new MemoryJavaCompiler();
+
+    private int lastCompiledClass = 0;
+
+    private List<String> javaImports = new LinkedList<>();
+
+    public PEGInterpreter(SyntaxModel syntax) {
+        List<IDirectiveModel> importDirectives = syntax.getDirectives().get("javaImport");
+        if (importDirectives != null) {
+            for (IDirectiveModel directive : importDirectives) {
+                if (directive.getDirectiveType() != DirectiveTypeModel.LITERAL) {
+                    throw new RuntimeException(
+                        "javaImport must be literal: " + directive.getDirectiveType()
+                    );
+                }
+
+                this.javaImports.add(((LiteralDirectiveModel) directive).getLiteral());
+            }
+        }
+
+        for (RuleModel rule : syntax.getRules()) {
             this.rules.put(rule.getName(), rule.getExpression());
         }
 
@@ -88,26 +131,64 @@ public class PEGInterpreter {
             return new NamedExpression(this.makePEG(named.getExpression()), named.getName());
         }
         case PREDICATE: {
-            //PredicateExpressionModel predicate = (PredicateExpressionModel) expr;
-
-            // TODO: implement. Here we need to eval java-code
-            throw new RuntimeException("Predicates not yet supported.");
+            // Normally predicates can be only in product,
+            // because in other cases he haven't access to any variables,
+            // but if someone put predicate in sum or something like that,
+            // we call him without variables.
+            // FIXME: Must be empty map
+            return this.createPredicate((PredicateExpressionModel) expr, new TreeMap<>());
         }
         case PRODUCT: {
             ProductExpressionModel product = (ProductExpressionModel) expr;
 
-            if (product.getCode() != null && !product.getCode().trim().equals("")) {
-                // TODO: implement. Here we need to eval java-code
-                throw new RuntimeException("Transformation code not yet supported.");
-            }
-
             List<PEGExpression> expressions = new ArrayList<>();
+            Map<String, TypeAndIndex> localVars = new HashMap<>();
 
+            int i = 0;
             for (IExpressionModel e : product.getExpressions()) {
-                expressions.add(this.makePEG(e));
+                if (e.getExpressionType() == ExpressionTypeModel.NAMED) {
+                    NamedExpressionModel named = (NamedExpressionModel) e;
+
+                    String typeName = null;
+                    List<IDirectiveModel> typeDirectives = named.getNameDirectives().get("type");
+                    if (typeDirectives != null && !typeDirectives.isEmpty()) {
+                        typeName = ((LiteralDirectiveModel) typeDirectives.get(0)).getLiteral();
+                    } else {
+                        typeName = "Object";
+                    }
+
+                    localVars.put(named.getName(), new TypeAndIndex(typeName, i));
+                }
+
+                i++;
+
+                if (!(e instanceof PredicateExpressionModel)) {
+                    expressions.add(this.makePEG(e));
+                } else {
+                    expressions.add(this.createPredicate(
+                        (PredicateExpressionModel) e,
+                        localVars
+                    ));
+                }
             }
 
-            return new ProductExpression(expressions);
+            if (product.getCode() != null && !product.getCode().trim().equals("")) {
+                Method method = this.createMethod(product.getCode(), localVars, true);
+
+                return new ProductExpression(
+                    expressions,
+                    parsing -> {
+                        try {
+                            return method.invoke(null, parsing);
+                        } catch (ReflectiveOperationException ex) {
+                            // FIXME: must be not runtime exception
+                            throw new RuntimeException(ex);
+                        }
+                    }
+                );
+            } else {
+                return new ProductExpression(expressions);
+            }
         }
         case SUM: {
             SumExpressionModel sum = (SumExpressionModel) expr;
@@ -145,7 +226,71 @@ public class PEGInterpreter {
         }
     }
 
+    private PEGExpression createPredicate(
+        PredicateExpressionModel predicate,
+        Map<String, TypeAndIndex> localVars)
+    {
+        Method method = this.createMethod(predicate.getCode(), localVars, false);
+
+        return new PredicateExpression(parsing -> {
+            try {
+                return (Boolean) method.invoke(null, parsing);
+            } catch (ReflectiveOperationException ex) {
+                // FIXME: must be not runtime exception
+                throw new RuntimeException(ex);
+            }
+        }, predicate.isNegate());
+    }
+
     public PEGExpression getExpression(String ruleName) {
         return this.result.get(ruleName);
+    }
+
+    private Method createMethod(String code, Map<String, TypeAndIndex> localVars, boolean isTransform) {
+        String packageName = "by.muna.temp.codegen.peg";
+        String path = "by/muna/temp/codegen/peg";
+        String className = "PEGCode" + (++this.lastCompiledClass);
+        String qualifiedClassName = packageName + "." + className;
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("package ").append(packageName).append(';');
+        sb.append("import by.muna.peg.IPEGParsing;");
+
+        for (String imp : this.javaImports) {
+            sb.append("import ").append(imp).append(';');
+        }
+
+        sb.append("public class ").append(className);
+        sb.append("{@SuppressWarnings(\"unchecked\") public static ");
+        sb.append(isTransform ? "Object" : "boolean");
+        sb.append(" eval(IPEGParsing _____){");
+
+        for (Entry<String, TypeAndIndex> localVar : localVars.entrySet()) {
+            TypeAndIndex typeAndIndex = localVar.getValue();
+            sb.append(typeAndIndex.typeName);
+            sb.append(' ').append(localVar.getKey());
+            sb.append("=(").append(typeAndIndex.typeName).append(')');
+            sb.append("_____.get(").append(Integer.toString(typeAndIndex.index)).append(");");
+        }
+
+        sb.append(code);
+
+        sb.append("}}");
+
+        String javaCode = sb.toString();
+
+        this.compiler.compile(Arrays.asList(new StringJavaFileObject(
+            path, className, javaCode
+        )));
+
+        try {
+            Class cls = this.compiler.loadClass(qualifiedClassName);
+
+            return cls.getMethod("eval", IPEGParsing.class);
+        } catch (ReflectiveOperationException ex) {
+            // FIXME: It should be not runtime exception.
+            throw new RuntimeException(ex);
+        }
     }
 }

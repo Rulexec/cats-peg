@@ -6,53 +6,65 @@ import by.muna.peg.grammar.PEGParseResult;
 import by.muna.peg.grammar.exceptions.PEGParseException;
 import by.muna.peg.interpreter.PEGInterpreter;
 import by.muna.peg.self.SelfParser;
-import by.muna.peg.self.model.RuleModel;
+import by.muna.peg.self.model.SyntaxModel;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.List;
-
 public class PEGInterpreterTest {
     @Test
-    @SuppressWarnings("unchecked")
     public void arithmeticTest() throws PEGParseException {
-        String syntax =
+        String syntaxText =
+            "#javaImport 'java.util.List'\n" +
             "start = additive\n" +
-            "additive = multiplicative '+' additive / multiplicative\n" +
-            "multiplicative = primary '*' multiplicative / primary\n" +
-            "primary = integer / '(' additive ')'\n" +
-            "integer = [0-9]+";
+            "additive = (a #type 'Integer'):multiplicative '+' (b #type 'Integer'):additive {@" +
+                "return a + b;" +
+            "@} / multiplicative\n" +
+            "multiplicative = (a #type 'Integer'):primary '*' (b #type 'Integer'):multiplicative {@" +
+                "return a * b;" +
+            "@} / primary\n" +
+            "primary = integer / '(' a:additive ')' {@" +
+                "return a;" +
+            "@}\n" +
+            "integer = (chars #type 'List<Character>'):[0-9]+ {@" +
+                "StringBuilder sb = new StringBuilder();" +
+                "for (char c : chars) sb.append(c);" +
+                "return Integer.parseUnsignedInt(sb.toString());" +
+            "@}";
 
-        PEGParseResult result = SelfParser.RULES.parse(new PEGParsing(), syntax, 0);
+        PEGParseResult result = SelfParser.SYNTAX.parse(new PEGParsing(), syntaxText, 0);
 
-        List<RuleModel> rules = (List<RuleModel>) result.getResult();
+        SyntaxModel syntax = (SyntaxModel) result.getResult();
 
-        PEGInterpreter interpreter = new PEGInterpreter(rules);
+        PEGInterpreter interpreter = new PEGInterpreter(syntax);
 
         PEGExpression expressions = interpreter.getExpression("start");
 
         result = expressions.parse(new PEGParsing(), "1+2*42", 0);
 
-        List<Object> addition = (List<Object>) result.getResult();
-        Assert.assertEquals(3, addition.size());
-        Assert.assertEquals("+", addition.get(1));
+        int number = (Integer) result.getResult();
 
-        List<Object> numberDigits = (List<Object>) addition.get(0);
-        Assert.assertEquals(1, numberDigits.size());
+        Assert.assertEquals(85, number);
+    }
 
-        Assert.assertEquals('1', numberDigits.get(0));
+    @Test
+    public void predicatesTest() throws PEGParseException {
+        String syntaxText =
+            "start = '1' (a #type 'Character'):. ! {@ return a == '2'; @} .* / '123'";
 
-        List<Object> multiplication = (List<Object>) addition.get(2);
-        Assert.assertEquals(3, multiplication.size());
-        Assert.assertEquals("*", multiplication.get(1));
+        PEGParseResult result = SelfParser.SYNTAX.parse(new PEGParsing(), syntaxText, 0);
 
-        numberDigits = (List<Object>) multiplication.get(0);
-        Assert.assertEquals(1, numberDigits.size());
-        Assert.assertEquals('2', numberDigits.get(0));
+        SyntaxModel syntax = (SyntaxModel) result.getResult();
 
-        numberDigits = (List<Object>) multiplication.get(2);
-        Assert.assertEquals(2, numberDigits.size());
-        Assert.assertEquals('4', numberDigits.get(0));
-        Assert.assertEquals('2', numberDigits.get(1));
+        PEGInterpreter interpreter = new PEGInterpreter(syntax);
+
+        PEGExpression expressions = interpreter.getExpression("start");
+
+        result = expressions.parse(new PEGParsing(), "123", 0);
+
+        if (result.getResult() instanceof String) {
+            Assert.assertEquals("123", (String) result.getResult());
+        } else {
+            Assert.fail(result.getResult().toString());
+        }
     }
 }
