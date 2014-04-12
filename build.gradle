@@ -16,3 +16,10 @@ jar {
         attributes 'Main-Class': 'by.muna.peg.Main'
     }
 }
+
+task createVersionFile << {
+    File versionFile = new File(buildDir, 'VERSION')
+    PrintWriter out = new PrintWriter(versionFile)
+    out.println(version)
+    out.close()
+}

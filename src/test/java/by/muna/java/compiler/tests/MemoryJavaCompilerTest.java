@@ -10,6 +10,7 @@ import java.util.Arrays;
 
 public class MemoryJavaCompilerTest {
     @Test
+    @SuppressWarnings("unchecked")
     public void helloWorldTest() throws ReflectiveOperationException {
         String code =
             "package by.muna.temp.codegen; public class HelloWorld {" +
