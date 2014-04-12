@@ -7,7 +7,6 @@ import by.muna.peg.grammar.exceptions.PEGParseException;
 import by.muna.peg.grammar.exceptions.PEGParseSyntaxException;
 import by.muna.peg.grammar.expressions.square.CharInterval;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

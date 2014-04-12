@@ -1,5 +1,6 @@
 package by.muna.peg.self;
 
+import by.muna.peg.PEGParser;
 import by.muna.peg.grammar.PEGExpression;
 import by.muna.peg.grammar.expressions.AnyCharExpression;
 import by.muna.peg.grammar.expressions.ExpressionHolder;
@@ -14,21 +15,21 @@ import by.muna.peg.self.model.DirectiveModel;
 import by.muna.peg.self.model.DirectivedNameModel;
 import by.muna.peg.self.model.IDirectiveModel;
 import by.muna.peg.self.model.IExpressionModel;
+import by.muna.peg.self.model.NameModel;
+import by.muna.peg.self.model.QuantificatorModel;
+import by.muna.peg.self.model.RuleModel;
+import by.muna.peg.self.model.SquareVariantsModel;
 import by.muna.peg.self.model.SyntaxModel;
 import by.muna.peg.self.model.directives.LiteralDirectiveModel;
 import by.muna.peg.self.model.expressions.AnyCharExpressionModel;
 import by.muna.peg.self.model.expressions.LiteralExpressionModel;
 import by.muna.peg.self.model.expressions.LookaheadExpressionModel;
-import by.muna.peg.self.model.NameModel;
 import by.muna.peg.self.model.expressions.NameExpressionModel;
 import by.muna.peg.self.model.expressions.NamedExpressionModel;
 import by.muna.peg.self.model.expressions.PredicateExpressionModel;
 import by.muna.peg.self.model.expressions.ProductExpressionModel;
-import by.muna.peg.self.model.QuantificatorModel;
 import by.muna.peg.self.model.expressions.QuantifiedExpressionModel;
-import by.muna.peg.self.model.RuleModel;
 import by.muna.peg.self.model.expressions.SquareExpressionModel;
-import by.muna.peg.self.model.SquareVariantsModel;
 import by.muna.peg.self.model.expressions.SumExpressionModel;
 
 import java.util.Arrays;
@@ -38,9 +39,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.BiFunction;
 
-public class SelfParser {
+public class SelfParser extends PEGParser<SyntaxModel> {
+    public SelfParser() {
+        super(SelfParser.SYNTAX);
+    }
+
     public static final PEGExpression WS = new QuantifiedExpression(
         new SquareExpression(
             Arrays.asList(' ', '\t', '\r', '\n'),
