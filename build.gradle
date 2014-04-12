@@ -12,6 +12,7 @@ dependencies {
 }
 
 jar {
+    baseName 'cats-peg'
     manifest {
         attributes 'Main-Class': 'by.muna.peg.Main'
     }
@@ -21,5 +22,11 @@ task createVersionFile << {
     File versionFile = new File(buildDir, 'VERSION')
     PrintWriter out = new PrintWriter(versionFile)
     out.println(version)
+    out.close()
+}
+task createArchiveNameFile << {
+    File archiveNameFile = new File(buildDir, 'JAR_NAME')
+    PrintWriter out = new PrintWriter(archiveNameFile)
+    out.println(jar.archiveName)
     out.close()
 }
