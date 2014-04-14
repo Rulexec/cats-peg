@@ -131,6 +131,13 @@ public class Main {
 #### DevelopmentParsing from _by.muna.peg.tools_
 
 ```
+static Object parseToObject(String syntax, String text) throws PEGParseException
+static Object parseToObject(String syntax, String text, String startRule) throws PEGParseExpception
+```
+
+Accepts syntax and text and returns parsed ```Object```.
+
+```
 static String parse(String syntax, String text) throws PEGParseException
 static String parse(String syntax, String text, String startRule) throws PEGParseException
 ```
