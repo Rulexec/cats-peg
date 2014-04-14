@@ -13,12 +13,21 @@ public class DevelopmentParsing {
     public static String parse(String syntax, String text, String startRule)
         throws PEGParseException
     {
+        return OutputFormatter.format(DevelopmentParsing.parseToObject(
+            syntax, text, startRule
+        ));
+    }
+
+    public static Object parseToObject(String syntax, String text) throws PEGParseException {
+        return DevelopmentParsing.parseToObject(syntax, text, "start");
+    }
+    public static Object parseToObject(String syntax, String text, String startRule)
+        throws PEGParseException
+    {
         SyntaxModel syntaxModel = new SelfParser().parse(syntax);
 
         PEGParser<Object> parser = new PEGInterpretativeParser<>(syntaxModel, startRule);
 
-        Object parsed = parser.parse(text);
-
-        return OutputFormatter.format(parsed);
+        return parser.parse(text);
     }
 }
