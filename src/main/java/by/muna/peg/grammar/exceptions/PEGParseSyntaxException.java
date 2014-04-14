@@ -29,12 +29,12 @@ public class PEGParseSyntaxException extends PEGParseException {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Expected: ");
+        sb.append("Expected: '");
         if (this.expected != null) {
             boolean isFirst = true;
             for (String s : this.expected) {
                 if (isFirst) isFirst = false;
-                else sb.append(", ");
+                else sb.append("', '");
 
                 sb.append(s);
             }
@@ -42,10 +42,10 @@ public class PEGParseSyntaxException extends PEGParseException {
             sb.append("???");
         }
 
-        sb.append(", got: ");
+        sb.append("', got: '");
         sb.append(this.got != null ? this.got : "???");
 
-        sb.append(", offset: ");
+        sb.append("', offset: ");
         sb.append(Integer.toString(this.offset));
 
         return sb.toString();

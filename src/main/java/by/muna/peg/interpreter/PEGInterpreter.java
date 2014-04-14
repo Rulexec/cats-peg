@@ -246,6 +246,7 @@ public class PEGInterpreter {
         return this.result.get(ruleName);
     }
 
+    @SuppressWarnings("unchecked")
     private Method createMethod(String code, Map<String, TypeAndIndex> localVars, boolean isTransform) {
         String packageName = "by.muna.temp.codegen.peg";
         String path = "by/muna/temp/codegen/peg";
